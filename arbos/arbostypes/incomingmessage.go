@@ -58,8 +58,8 @@ func (h L1IncomingMessageHeader) SeqNum() (uint64, error) {
 
 type L1IncomingMessage struct {
 	Header      *L1IncomingMessageHeader `json:"header"`
+	L2BlockHash *common.Hash             `json:"l2BlockHash,omitempty" rlp:"nilList"`
 	L2msg       []byte                   `json:"l2Msg"`
-	L2BlockHash *common.Hash             `json:"l2BlockHash,omitempty" rlp:"optional"`
 
 	// Only used for `L1MessageType_BatchPostingReport`
 	BatchGasCost *uint64 `json:"batchGasCost,omitempty" rlp:"optional"`
@@ -117,6 +117,19 @@ func (msg *L1IncomingMessage) Serialize() ([]byte, error) {
 	l1BaseFeeHash = common.BigToHash(msg.Header.L1BaseFee)
 	if err := util.HashToWriter(l1BaseFeeHash, wr); err != nil {
 		return nil, err
+	}
+
+	hasL2BlockHash := false
+	if msg.L2BlockHash != nil {
+		hasL2BlockHash = true
+	}
+	if err := util.BoolToWriter(hasL2BlockHash, wr); err != nil {
+		return nil, err
+	}
+	if hasL2BlockHash {
+		if err := util.HashToWriter(*msg.L2BlockHash, wr); err != nil {
+			return nil, err
+		}
 	}
 
 	if _, err := wr.Write(msg.L2msg); err != nil {
@@ -218,6 +231,18 @@ func ParseIncomingL1Message(rd io.Reader, batchFetcher FallibleBatchFetcher) (*L
 		return nil, err
 	}
 
+	hasL2BlockHash, err := util.BoolFromReader(rd)
+	if err != nil {
+		return nil, err
+	}
+	var l2BlockHash common.Hash
+	if hasL2BlockHash {
+		l2BlockHash, err = util.HashFromReader(rd)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	data, err := io.ReadAll(rd)
 	if err != nil {
 		return nil, err
@@ -232,8 +257,8 @@ func ParseIncomingL1Message(rd io.Reader, batchFetcher FallibleBatchFetcher) (*L
 			&requestId,
 			baseFeeL1.Big(),
 		},
+		&l2BlockHash,
 		data,
-		nil,
 		nil,
 	}
 	err = msg.FillInBatchGasCost(batchFetcher)

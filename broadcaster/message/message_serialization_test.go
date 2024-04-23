@@ -30,8 +30,8 @@ func ExampleBroadcastMessage_broadcastfeedmessageWithBlockHash() {
 							RequestId:   &requestId,
 							L1BaseFee:   big.NewInt(0),
 						},
-						L2msg:       []byte{0xde, 0xad, 0xbe, 0xef},
-						L2BlockHash: &common.Hash{0: 0xff},
+						L2msg: []byte{0xde, 0xad, 0xbe, 0xef},
+						// L2BlockHash: &common.Hash{0: 0xff},
 					},
 					DelayedMessagesRead: 3333,
 				},
@@ -42,8 +42,9 @@ func ExampleBroadcastMessage_broadcastfeedmessageWithBlockHash() {
 	var buf bytes.Buffer
 	encoder := json.NewEncoder(&buf)
 	_ = encoder.Encode(msg)
-	fmt.Println(buf.String())
 	// Output: {"version":1,"messages":[{"sequenceNumber":12345,"message":{"message":{"header":{"kind":0,"sender":"0x0000000000000000000000000000000000000000","blockNumber":0,"timestamp":0,"requestId":"0x0000000000000000000000000000000000000000000000000000000000000000","baseFeeL1":0},"l2Msg":"3q2+7w==","l2BlockHash":"0xff00000000000000000000000000000000000000000000000000000000000000"},"delayedMessagesRead":3333},"signature":null}]}
+	fmt.Println(buf.String())
+	// Output: {"version":1,"messages":[{"sequenceNumber":12345,"message":{"message":{"header":{"kind":0,"sender":"0x0000000000000000000000000000000000000000","blockNumber":0,"timestamp":0,"requestId":"0x0000000000000000000000000000000000000000000000000000000000000000","baseFeeL1":0},"l2Msg":"3q2+7w=="},"delayedMessagesRead":3333},"signature":null}]}
 }
 
 func ExampleBroadcastMessage_broadcastfeedmessageWithoutBlockHash() {

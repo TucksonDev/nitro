@@ -164,6 +164,23 @@ func Uint64ToWriter(val uint64, wr io.Writer) error {
 	return err
 }
 
+func BoolFromReader(rd io.Reader) (bool, error) {
+	buf := make([]byte, 1)
+	if _, err := io.ReadFull(rd, buf); err != nil {
+		return false, err
+	}
+	return buf[0] == 1, nil
+}
+
+func BoolToWriter(val bool, wr io.Writer) error {
+	var buf [1]byte
+	if val {
+		buf[0] = 1
+	}
+	_, err := wr.Write(buf[:])
+	return err
+}
+
 func BytestringFromReader(rd io.Reader, maxBytesToRead uint64) ([]byte, error) {
 	size, err := Uint64FromReader(rd)
 	if err != nil {
