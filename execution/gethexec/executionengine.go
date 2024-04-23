@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -182,7 +183,12 @@ func (s *ExecutionEngine) NextDelayedMessageNumber() (uint64, error) {
 	return currentHeader.Nonce.Uint64(), nil
 }
 
-func messageFromTxes(header *arbostypes.L1IncomingMessageHeader, txes types.Transactions, txErrors []error) (*arbostypes.L1IncomingMessage, error) {
+func messageFromTxes(
+	header *arbostypes.L1IncomingMessageHeader,
+	txes types.Transactions,
+	txErrors []error,
+	l2BlockHash common.Hash,
+) (*arbostypes.L1IncomingMessage, error) {
 	var l2Message []byte
 	if len(txes) == 1 && txErrors[0] == nil {
 		txBytes, err := txes[0].MarshalBinary()
@@ -209,8 +215,9 @@ func messageFromTxes(header *arbostypes.L1IncomingMessageHeader, txes types.Tran
 		}
 	}
 	return &arbostypes.L1IncomingMessage{
-		Header: header,
-		L2msg:  l2Message,
+		Header:      header,
+		L2msg:       l2Message,
+		L2BlockHash: &l2BlockHash,
 	}, nil
 }
 
@@ -353,7 +360,7 @@ func (s *ExecutionEngine) sequenceTransactionsWithBlockMutex(header *arbostypes.
 		return nil, nil
 	}
 
-	msg, err := messageFromTxes(header, txes, hooks.TxErrors)
+	msg, err := messageFromTxes(header, txes, hooks.TxErrors, block.Hash())
 	if err != nil {
 		return nil, err
 	}
@@ -368,7 +375,7 @@ func (s *ExecutionEngine) sequenceTransactionsWithBlockMutex(header *arbostypes.
 		return nil, err
 	}
 
-	err = s.consensus.WriteMessageFromSequencer(pos, msgWithMeta, block.Hash())
+	err = s.consensus.WriteMessageFromSequencer(pos, msgWithMeta)
 	if err != nil {
 		return nil, err
 	}
@@ -419,8 +426,10 @@ func (s *ExecutionEngine) sequenceDelayedMessageWithBlockMutex(message *arbostyp
 	if err != nil {
 		return nil, err
 	}
+	blockHash := block.Hash()
+	messageWithMeta.Message.L2BlockHash = &blockHash
 
-	err = s.consensus.WriteMessageFromSequencer(lastMsg+1, messageWithMeta, block.Hash())
+	err = s.consensus.WriteMessageFromSequencer(lastMsg+1, messageWithMeta)
 	if err != nil {
 		return nil, err
 	}

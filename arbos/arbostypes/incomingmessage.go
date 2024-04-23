@@ -57,8 +57,9 @@ func (h L1IncomingMessageHeader) SeqNum() (uint64, error) {
 }
 
 type L1IncomingMessage struct {
-	Header *L1IncomingMessageHeader `json:"header"`
-	L2msg  []byte                   `json:"l2Msg"`
+	Header      *L1IncomingMessageHeader `json:"header"`
+	L2msg       []byte                   `json:"l2Msg"`
+	L2BlockHash *common.Hash             `json:"l2BlockHash,omitempty" rlp:"optional"`
 
 	// Only used for `L1MessageType_BatchPostingReport`
 	BatchGasCost *uint64 `json:"batchGasCost,omitempty" rlp:"optional"`
@@ -232,6 +233,7 @@ func ParseIncomingL1Message(rd io.Reader, batchFetcher FallibleBatchFetcher) (*L
 			baseFeeL1.Big(),
 		},
 		data,
+		nil,
 		nil,
 	}
 	err = msg.FillInBatchGasCost(batchFetcher)
